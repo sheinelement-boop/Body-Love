@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLEXAI — Голосовой тренер</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;
+    --border:rgba(255,255,255,0.06);
+    --accent:#c8ff00;--accent2:#00d4ff;--accent3:#ff6b35;
+    --text:#f0f0f0;--muted:#777;--radius:12px;
+    --font:'Space Grotesk',sans-serif;--display:'Bebas Neue',cursive;
+  }
+  body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow:hidden}
+  .app{display:grid;grid-template-columns:260px 1fr 280px;grid-template-rows:56px 1fr;height:100vh}
+
+  .header{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px}
+  .logo{font-family:var(--display);font-size:24px;letter-spacing:2px;color:var(--accent)}
+  .logo span{color:var(--accent2)}
+  .htabs{display:flex;gap:4px;margin-left:16px}
+  .htab{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s}
+  .htab.active{background:var(--accent);color:#000}
+  .htab:hover:not(.active){color:var(--text);background:var(--surface2)}
+  .hright{margin-left:auto;display:flex;align-items:center;gap:14px}
+  .pdot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pdot 2s ease-in-out infinite;box-shadow:0 0 5px var(--accent)}
+  @keyframes pdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+  .ava{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000}
+
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+  .wcard{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+  .wtitle{font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+  .mrow{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)}
+  .mrow:last-child{border-bottom:none}
+  .mlabel{font-size:12px;color:var(--muted)}
+  .mval{font-size:13px;font-weight:600}
+  .ac{color:var(--accent)}.ac2{color:var(--accent2)}.ac3{color:var(--accent3)}
+  .ringwrap{display:flex;justify-content:center;align-items:center;padding:6px 0;position:relative}
+  .ringlab{position:absolute;text-align:center}
+  .ringnum{font-family:var(--display);font-size:26px;color:var(--accent);line-height:1}
+  .ringsub{font-size:10px;color:var(--muted)}
+  .mbar{display:flex;height:5px;border-radius:3px;overflow:hidden;gap:2px;margin:6px 0 4px}
+  .bseg{border-radius:3px}
+  .mleg{display:flex;gap:8px;flex-wrap:wrap}
+  .litem{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+  .ldot{width:6px;height:6px;border-radius:50%}
+
+  .chat-area{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+  .chat-view{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px}
+  .chat-view::-webkit-scrollbar{width:3px}
+  .chat-view::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  .msg{display:flex;gap:8px;align-items:flex-start;animation:msgIn .3s ease}
+  @keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .msg.user{flex-direction:row-reverse}
+  .mavatar{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+  .botav{background:#0a1a0a;border:1px solid var(--accent)}
+  .userav{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;font-weight:700;font-size:12px}
+  .bubble{max-width:76%;padding:9px 13px;border-radius:13px;font-size:13px;line-height:1.5}
+  .botbub{background:var(--surface);border:1px solid var(--border);border-top-left-radius:3px;color:var(--text)}
+  .userbub{background:var(--accent);color:#000;border-top-right-radius:3px;font-weight:500}
+  .chips{display:flex;gap:5px;padding:6px 16px;flex-wrap:wrap}
+  .chip{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all .2s;white-space:nowrap}
+  .chip:hover{border-color:var(--accent);color:var(--accent)}
+
+  .input-bar{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--surface)}
+  .cinput{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:22px;padding:9px 14px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;transition:border-color .2s;resize:none;max-height:70px;overflow-y:auto}
+  .cinput:focus{border-color:var(--accent)}
+  .cinput::placeholder{color:var(--muted)}
+
+  .sendbtn{width:38px;height:38px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+  .sendbtn:hover{transform:scale(1.06)}
+  .sendbtn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+  .sendbtn svg{width:16px;height:16px;fill:#000}
+
+  .micbtn{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;font-size:17px}
+  .micbtn:hover{border-color:var(--accent2)}
+  .micbtn.recording{border-color:var(--accent3);background:rgba(255,107,53,.15);animation:recpulse 1s ease-in-out infinite}
+  .micbtn.speaking{border-color:var(--accent2);background:rgba(0,212,255,.1);animation:speakpulse .8s ease-in-out infinite}
+  @keyframes recpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,107,53,.4)}50%{box-shadow:0 0 0 7px rgba(255,107,53,0)}}
+  @keyframes speakpulse{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,.4)}50%{box-shadow:0 0 0 7px rgba(0,212,255,0)}}
+
+  .voice-status{font-size:11px;color:var(--muted);padding:0 14px 5px;text-align:center;min-height:17px}
+  .voice-status.rec{color:var(--accent3)}
+  .voice-status.think{color:var(--accent)}
+  .voice-status.speak{color:var(--accent2)}
+
+  .typing-indicator{display:flex;gap:4px;align-items:center;padding:9px 13px;background:var(--surface);border:1px solid var(--border);border-radius:13px;border-top-left-radius:3px;width:fit-content}
+  .tdot{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:typing 1.2s infinite}
+  .tdot:nth-child(2){animation-delay:.2s}.tdot:nth-child(3){animation-delay:.4s}
+  @keyframes typing{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+
+  .rpanel{background:var(--surface);border-left:1px solid var(--border);padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+  .numInput{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text);outline:none;transition:border-color .2s;margin-top:3px}
+  .numInput:focus{border-color:var(--accent)}
+  .inlabel{font-size:11px;color:var(--muted);margin-top:7px;display:block}
+  .syncbtn{width:100%;padding:8px;background:transparent;border:1px solid var(--accent);border-radius:7px;color:var(--accent);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;margin-top:8px}
+  .syncbtn:hover{background:var(--accent);color:#000}
+  .pitem{padding:7px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+  .pitem:last-child{border-bottom:none}
+  .pdott{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .ptext{font-size:12px;line-height:1.35}
+  .ptime{font-size:10px;color:var(--muted)}
+  .hlc{color:var(--accent);font-weight:600}.hlc2{color:var(--accent2);font-weight:600}
+
+  .wave-bars{display:flex;align-items:center;gap:2px;height:18px}
+  .wb{width:3px;border-radius:2px;height:4px;transition:height .1s}
+  .wb.active-rec{background:var(--accent3);animation:waveani .5s ease-in-out infinite}
+  .wb.active-spk{background:var(--accent2);animation:waveani .4s ease-in-out infinite}
+  .wb:nth-child(2){animation-delay:.1s}.wb:nth-child(3){animation-delay:.2s}.wb:nth-child(4){animation-delay:.15s}
+  @keyframes waveani{0%,100%{height:3px}50%{height:15px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">FLEX<span>AI</span></div>
+    <div class="htabs">
+      <button class="htab active">💬 Чат</button>
+      <button class="htab">🏋️ Тренировки</button>
+      <button class="htab">🥗 Питание</button>
+      <button class="htab">📊 Прогресс</button>
+    </div>
+    <div class="hright">
+      <div class="pdot"></div>
+      <span style="font-size:11px;color:var(--muted)">ИИ онлайн</span>
+      <div class="ava">АС</div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="wcard">
+      <div class="wtitle">⚡ Сегодня</div>
+      <div class="ringwrap">
+        <svg width="86" height="86" viewBox="0 0 86 86">
+          <circle cx="43" cy="43" r="36" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="7"/>
+          <circle cx="43" cy="43" r="36" fill="none" stroke="#c8ff00" stroke-width="7" stroke-dasharray="226.19" stroke-dashoffset="59" stroke-linecap="round" transform="rotate(-90 43 43)" opacity=".9"/>
+          <circle cx="43" cy="43" r="26" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="5"/>
+          <circle cx="43" cy="43" r="26" fill="none" stroke="#00d4ff" stroke-width="5" stroke-dasharray="163.36" stroke-dashoffset="47" stroke-linecap="round" transform="rotate(-90 43 43)" opacity=".8"/>
+        </svg>
+        <div class="ringlab"><div class="ringnum">74%</div><div class="ringsub">цель дня</div></div>
+      </div>
+    </div>
+    <div class="wcard">
+      <div class="wtitle">📈 Показатели</div>
+      <div class="mrow"><div class="mlabel">🔥 Калории</div><div class="mval ac">1 840</div></div>
+      <div class="mrow"><div class="mlabel">👟 Шаги</div><div class="mval ac2">7 420</div></div>
+      <div class="mrow"><div class="mlabel">❤️ ЧСС</div><div class="mval ac3">68 уд/мин</div></div>
+      <div class="mrow"><div class="mlabel">😴 Сон</div><div class="mval">7ч 20мин</div></div>
+      <div class="mrow"><div class="mlabel">💧 Вода</div><div class="mval ac">1.4 / 2 л</div></div>
+    </div>
+    <div class="wcard">
+      <div class="wtitle">🥗 Макронутриенты</div>
+      <div class="mbar">
+        <div class="bseg" style="width:35%;background:#c8ff00"></div>
+        <div class="bseg" style="width:25%;background:#00d4ff"></div>
+        <div class="bseg" style="width:40%;background:#ff6b35"></div>
+      </div>
+      <div class="mleg">
+        <div class="litem"><div class="ldot" style="background:#c8ff00"></div>Белки 120г</div>
+        <div class="litem"><div class="ldot" style="background:#00d4ff"></div>Жиры 55г</div>
+        <div class="litem"><div class="ldot" style="background:#ff6b35"></div>Углеводы 180г</div>
+      </div>
+    </div>
+    <div class="wcard">
+      <div class="wtitle">🏆 Неделя</div>
+      <div class="mrow"><div class="mlabel">Тренировок</div><div class="mval ac">4 / 5</div></div>
+      <div class="mrow"><div class="mlabel">Сожжено</div><div class="mval">9 240 ккал</div></div>
+      <div class="mrow"><div class="mlabel">Стрик</div><div class="mval ac">🔥 12 дней</div></div>
+    </div>
+  </div>
+
+  <div class="chat-area">
+    <div class="chat-view" id="chatView">
+      <div class="msg">
+        <div class="mavatar botav">💪</div>
+        <div class="bubble botbub">Привет, Алекс! Я твой голосовой AI-тренер.<br><br>Нажми <span class="hlc2">🎤</span> и говори — я отвечу голосом. Или пиши как обычно. Нажми на кнопку ещё раз чтобы остановить речь. 🎯</div>
+      </div>
+    </div>
+
+    <div class="chips">
+      <div class="chip" onclick="chipSend(this)">📋 План питания на день</div>
+      <div class="chip" onclick="chipSend(this)">💪 Тренировка сегодня</div>
+      <div class="chip" onclick="chipSend(this)">📊 Анализ моих данных</div>
+      <div class="chip" onclick="chipSend(this)">🥗 Что поесть после тренировки?</div>
+      <div class="chip" onclick="chipSend(this)">😴 Советы по восстановлению</div>
+    </div>
+
+    <div class="voice-status" id="voiceStatus"></div>
+
+    <div class="input-bar">
+      <button class="micbtn" id="micBtn" onclick="toggleVoice()" title="Голосовой ввод" aria-label="Голосовой ввод">
+        <span id="micInner">🎤</span>
+      </button>
+      <textarea class="cinput" id="userInput" placeholder="Напиши или нажми 🎤 для голоса..." rows="1"
+        onkeydown="handleKey(event)" oninput="autoRes(this)"></textarea>
+      <button class="sendbtn" id="sendBtn" onclick="doSend(false)" aria-label="Отправить">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="rpanel">
+    <div class="wcard">
+      <div class="wtitle" style="display:flex;align-items:center;gap:5px"><span style="color:var(--accent2)">⌚</span> Данные с устройства</div>
+      <span class="inlabel">Шаги</span>
+      <input type="number" class="numInput" id="stepsInput" value="7420">
+      <span class="inlabel">Активные калории (ккал)</span>
+      <input type="number" class="numInput" id="calsInput" value="420">
+      <span class="inlabel">ЧСС покоя (уд/мин)</span>
+      <input type="number" class="numInput" id="hrInput" value="68">
+      <span class="inlabel">Сон (часы)</span>
+      <input type="number" class="numInput" id="sleepInput" value="7.3" step="0.1">
+      <span class="inlabel">Вода (л)</span>
+      <input type="number" class="numInput" id="waterInput" value="1.4" step="0.1">
+      <button class="syncbtn" onclick="syncData()">⚡ Синхронизировать и анализировать</button>
+    </div>
+    <div class="wcard">
+      <div class="wtitle">📅 План на сегодня</div>
+      <div class="pitem"><div class="pdott" style="background:#c8ff00"></div><div><div class="ptext">Завтрак: овсянка + яйца</div><div class="ptime">08:00 · 480 ккал</div></div></div>
+      <div class="pitem"><div class="pdott" style="background:#00d4ff"></div><div><div class="ptext">Силовая: грудь + трицепс</div><div class="ptime">11:00 · ~45 мин</div></div></div>
+      <div class="pitem"><div class="pdott" style="background:#c8ff00"></div><div><div class="ptext">Обед: курица + рис + овощи</div><div class="ptime">13:30 · 620 ккал</div></div></div>
+      <div class="pitem"><div class="pdott" style="background:#888"></div><div><div class="ptext">Протеиновый коктейль</div><div class="ptime">16:00 · 200 ккал</div></div></div>
+      <div class="pitem"><div class="pdott" style="background:#ff6b35"></div><div><div class="ptext">Ужин: рыба + салат</div><div class="ptime">19:30 · 540 ккал</div></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SYSTEM = () => {
+  const s=document.getElementById('stepsInput').value,
+    c=document.getElementById('calsInput').value,
+    h=document.getElementById('hrInput').value,
+    sl=document.getElementById('sleepInput').value,
+    w=document.getElementById('waterInput').value;
+  return `Ты FLEXAI — голосовой персональный AI-тренер и нутрициолог. Говоришь только по-русски. Отвечай КОРОТКО и конкретно — 2-4 предложения (ответы озвучиваются вслух). Без эмодзи в тексте, без форматирования — говори как живой тренер.
+
+Профиль: Алекс, рекомпозиция тела, 78 кг, 181 см, 28 лет, тренируется 4-5 раз в неделю.
+Суточные нормы: 2200 ккал, 160г белка, 70г жира, 220г углеводов.
+Данные сегодня: шаги=${s}, активные ккал=${c}, ЧСС покоя=${h} уд/мин, сон=${sl}ч, вода=${w}л.
+
+Стиль: конкретно, цифры, мотивация через данные. Для голосовых ответов — чистый текст без символов.`;
+};
+
+let messages = [];
+let isLoading = false;
+let recognition = null;
+let isRecording = false;
+let isSpeaking = false;
+let useVoiceReply = false;
+
+const synth = window.speechSynthesis;
+
+function getRuVoice() {
+  const voices = synth.getVoices();
+  return voices.find(v => v.lang === 'ru-RU' && /female|женщин|alena|irina|milena/i.test(v.name)) ||
+         voices.find(v => v.lang === 'ru-RU') ||
+         voices.find(v => v.lang.startsWith('ru')) || null;
+}
+
+function speak(text) {
+  if (!synth) return;
+  synth.cancel();
+  const clean = text.replace(/[*_`#>•\-]/g, '').replace(/\n+/g, '. ').trim();
+  const utt = new SpeechSynthesisUtterance(clean);
+  utt.lang = 'ru-RU';
+  utt.rate = 1.05;
+  utt.pitch = 1.1;
+  const voice = getRuVoice();
+  if (voice) utt.voice = voice;
+  utt.onstart = () => { isSpeaking = true; setUIState('speaking'); };
+  utt.onend = () => { isSpeaking = false; setUIState('idle'); };
+  utt.onerror = () => { isSpeaking = false; setUIState('idle'); };
+  synth.speak(utt);
+}
+
+function stopSpeaking() {
+  synth.cancel();
+  isSpeaking = false;
+  setUIState('idle');
+}
+
+function setUIState(state) {
+  const btn = document.getElementById('micBtn');
+  const inner = document.getElementById('micInner');
+  const status = document.getElementById('voiceStatus');
+  btn.className = 'micbtn';
+  status.className = 'voice-status';
+  status.textContent = '';
+
+  if (state === 'recording') {
+    btn.classList.add('recording');
+    inner.innerHTML = '<div class="wave-bars"><div class="wb active-rec"></div><div class="wb active-rec"></div><div class="wb active-rec"></div><div class="wb active-rec"></div></div>';
+    status.classList.add('rec');
+    status.textContent = '🔴 Слушаю... нажми снова чтобы отправить';
+  } else if (state === 'thinking') {
+    inner.textContent = '⏳';
+    status.classList.add('think');
+    status.textContent = '💭 Думаю...';
+  } else if (state === 'speaking') {
+    btn.classList.add('speaking');
+    inner.innerHTML = '<div class="wave-bars"><div class="wb active-spk"></div><div class="wb active-spk"></div><div class="wb active-spk"></div><div class="wb active-spk"></div></div>';
+    status.classList.add('speak');
+    status.textContent = '🔊 Тренер говорит... нажми 🎤 чтобы остановить';
+  } else {
+    inner.textContent = '🎤';
+  }
+}
+
+function setupRecognition() {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) return null;
+  const r = new SpeechRec();
+  r.lang = 'ru-RU';
+  r.continuous = false;
+  r.interimResults = false;
+  r.onresult = (e) => {
+    const t = e.results[0][0].transcript;
+    document.getElementById('userInput').value = t;
+    isRecording = false;
+    doSend(true);
+  };
+  r.onerror = (e) => {
+    isRecording = false;
+    setUIState('idle');
+    if (e.error !== 'no-speech' && e.error !== 'aborted') addMsg('Не удалось распознать голос. Попробуй ещё раз.', false, false);
+  };
+  r.onend = () => { if (isRecording) { isRecording = false; setUIState('idle'); } };
+  return r;
+}
+
+function toggleVoice() {
+  if (isSpeaking) { stopSpeaking(); return; }
+  if (!recognition) recognition = setupRecognition();
+  if (!recognition) {
+    addMsg('Голосовой ввод не поддерживается. Используй Chrome или Edge.', false, false);
+    return;
+  }
+  if (isRecording) {
+    recognition.stop();
+    isRecording = false;
+    setUIState('idle');
+  } else {
+    isRecording = true;
+    setUIState('recording');
+    try { recognition.start(); } catch(e) { isRecording = false; setUIState('idle'); }
+  }
+}
+
+async function callClaude(userMsg) {
+  messages.push({ role: 'user', content: userMsg });
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: SYSTEM(), messages })
+  });
+  const data = await resp.json();
+  const text = data.content?.[0]?.text || 'Что-то пошло не так. Попробуй ещё раз!';
+  messages.push({ role: 'assistant', content: text });
+  return text;
+}
+
+function addMsg(text, isUser, withSpeak) {
+  const view = document.getElementById('chatView');
+  const div = document.createElement('div');
+  div.className = 'msg' + (isUser ? ' user' : '');
+  const av = document.createElement('div');
+  av.className = 'mavatar ' + (isUser ? 'userav' : 'botav');
+  av.textContent = isUser ? 'АС' : '💪';
+  const bub = document.createElement('div');
+  bub.className = 'bubble ' + (isUser ? 'userbub' : 'botbub');
+  bub.innerHTML = text.replace(/\n/g, '<br>');
+  div.appendChild(av); div.appendChild(bub);
+  view.appendChild(div);
+  view.scrollTop = view.scrollHeight;
+  if (!isUser && withSpeak) speak(text);
+}
+
+function showTyping() {
+  const view = document.getElementById('chatView');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg'; wrap.id = 'typingWrap';
+  const av = document.createElement('div');
+  av.className = 'mavatar botav'; av.textContent = '💪';
+  const ind = document.createElement('div'); ind.className = 'typing-indicator';
+  [1,2,3].forEach(() => { const d = document.createElement('div'); d.className = 'tdot'; ind.appendChild(d); });
+  wrap.appendChild(av); wrap.appendChild(ind);
+  view.appendChild(wrap);
+  view.scrollTop = view.scrollHeight;
+}
+
+function removeTyping() { const el = document.getElementById('typingWrap'); if(el) el.remove(); }
+
+async function doSend(voiceReply) {
+  const input = document.getElementById('userInput');
+  const btn = document.getElementById('sendBtn');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+  isLoading = true; btn.disabled = true;
+  input.value = ''; input.style.height = 'auto';
+  addMsg(text, true, false);
+  setUIState('thinking');
+  showTyping();
+  try {
+    const reply = await callClaude(text);
+    removeTyping();
+    addMsg(reply, false, voiceReply);
+    if (!voiceReply) setUIState('idle');
+  } catch(e) {
+    removeTyping(); setUIState('idle');
+    addMsg('⚠️ Ошибка соединения. Проверь интернет.', false, false);
+  }
+  isLoading = false; btn.disabled = false;
+}
+
+function chipSend(el) {
+  document.getElementById('userInput').value = el.textContent.trim();
+  doSend(false);
+}
+
+function syncData() {
+  const s=document.getElementById('stepsInput').value, c=document.getElementById('calsInput').value,
+    h=document.getElementById('hrInput').value, sl=document.getElementById('sleepInput').value,
+    w=document.getElementById('waterInput').value;
+  document.getElementById('userInput').value = `Синхронизирую данные. Шаги ${s}, калории ${c} ккал, ЧСС ${h}, сон ${sl} часа, вода ${w} литра. Проанализируй и скажи что делать дальше.`;
+  doSend(true);
+}
+
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); doSend(false); } }
+function autoRes(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,70)+'px'; }
+
+document.querySelectorAll('.htab').forEach(t => {
+  t.addEventListener('click', () => { document.querySelectorAll('.htab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); });
+});
+
+synth.getVoices && synth.getVoices();
+if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = () => {};
+</script>
+</body>
+</html>
